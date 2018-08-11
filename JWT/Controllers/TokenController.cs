@@ -5,9 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using JWT.Helpers;
 using JWT.Models;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -29,17 +27,37 @@ namespace JWT.Controllers
         [HttpPost]
         public IActionResult CreateToken([FromBody]LoginModel login)
         {
-            //  applied by me source https://auth0.com/blog/securing-asp-dot-net-core-2-applications-with-jwts/ 
             IActionResult response = Unauthorized();
             var user = Authenticate(login);
-            // await _db.Login(userForLoginDto.Username.ToLower() , userForLoginDto.Password);
+
             if (user != null)
             {
-                var tokenString = Token.BuildToken(user);
+                var tokenString = BuildToken(user);
                 response = Ok(new { token = tokenString });
             }
 
             return response;
+        }
+
+        private string BuildToken(UserModel user)
+        {
+            var claims = new[] {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Name),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Birthdate, user.Birthdate.ToString("yyyy-MM-dd")),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(_config["Jwt:Issuer"],
+                                             _config["Jwt:Issuer"],
+                                              claims,
+                                             expires: DateTime.Now.AddMinutes(30),
+                                             signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private UserModel Authenticate(LoginModel login)
@@ -48,7 +66,7 @@ namespace JWT.Controllers
 
             if (login.Username == "mario" && login.Password == "secret")
             {
-                user = new UserModel { Name = "Mario Rossi", Email = "mario.rossi@domain.com" };
+                user = new UserModel { Name = "Mario Rossi", Email = "mario.rossi@domain.com" , Birthdate = DateTime.ParseExact("15/06/2015 13:45:00", "dd/MM/yyyy HH:mm:ss", null) };
             }
             return user;
         }

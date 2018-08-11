@@ -40,6 +40,17 @@ namespace JWT
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]))
                     };
                 });
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy",
+                    builder => builder.AllowAnyOrigin() // WithOrigins to specify our domin 
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials()
+                        .Build());
+            });
+
             services.AddMvc();
         }
 
@@ -50,6 +61,8 @@ namespace JWT
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors("CorsPolicy");
             app.UseAuthentication();
             app.UseMvc();
         }
