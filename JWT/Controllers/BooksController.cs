@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JWT.Controllers
 {
     [Route("api/[controller]")]
-    public partial class BooksController : Controller
+    public  class BooksController : Controller
     {
 
         [HttpGet, Authorize]
